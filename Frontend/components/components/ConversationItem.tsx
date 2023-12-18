@@ -4,6 +4,8 @@ import React from "react"
 type Props = { isQuestion?: boolean; content?: string }
 
 const ConversationItem = ({ isQuestion, content }: Props) => {
+  console.log(content)
+  const contentWithBreaks = content.replace(/\n/g, '<br />');
   if (!content) return null
   return (
     <div className="flex gap-1 p-4 mx-2 flex-col md:px-4 md:last:pb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl">
@@ -17,7 +19,7 @@ const ConversationItem = ({ isQuestion, content }: Props) => {
         <div className="font-semibold ">{isQuestion ? "You" : "Chat"}</div>
       </div>
       <div className="flex-1">
-        <div className="w-full break-words flex-wrap">{content}</div>
+        <span dangerouslySetInnerHTML={{__html: contentWithBreaks}}/>
       </div>
     </div>
   )

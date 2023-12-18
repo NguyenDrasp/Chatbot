@@ -44,10 +44,12 @@ export default function Home() {
           body: JSON.stringify(payload)
         }
       )
+      console.log(response)
       const reader = response?.body?.getReader()
 
       while (true) {
         const { done, value } = await reader?.read()
+        console.log(value)
         const decoder = new TextDecoder()
         setAnswer((ans) => [ans, decoder.decode(value)].join(""))
         scrollToBottom()
