@@ -5,7 +5,8 @@ services:
       context: .
       dockerfile: ./ssale/Dockerfile
     volumes:
-      - ./backend:/app/backend
+      - ./ssale:/app
+      - ./ssale/static:/app/static
     stdin_open: true
     tty: true
     command: uvicorn ssale.asgi:application --host 0.0.0.0 --port 80

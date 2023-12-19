@@ -14,12 +14,37 @@ class ChatSession(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
     user = models.ForeignKey(User, related_name='chat_sessions', on_delete=models.CASCADE)
 
+
     def __str__(self):
         return f"ChatSession started at {self.start_time} by {self.user}"
     
 class Message(models.Model):
-    content = models.TextField()
-    session = models.ForeignKey(ChatSession,related_name='sessions', on_delete=models.CASCADE)
+    # HUMAN = 'human'
+    # AI = 'ai'
+    
+    # MESSAGE_TYPE_CHOICES = [
+    #     (HUMAN, 'human'),
+    #     (AI, 'ai'),
+    # ]
+
+    # message_type = models.CharField(max_length=10, choices=MESSAGE_TYPE_CHOICES, default=HUMAN)
+    data = models.TextField(default = '')
+    '''
+    {'type': 'human',
+    'data': {'content': 'Chào bạn, mình là Đạt',
+            'additional_kwargs': {},
+            'type': 'human',
+            'example': False}}
+    
+            
+     {'type': 'ai',
+    'data': {'content': 'MDC có các sản phẩm sau đây:\n1. iMatch - Match, Chat, Date\n2. iVPN\n3. Vise - Video Search Engine\n4. Can Knockdown AR\n5. Can Knockdown AR Pro\n6. Super Bomber Online\n7. Super Tank Online\n8. Friend Locator\n\nBạn có thể tìm hiểu thêm về từng sản phẩm hoặc có câu hỏi cụ thể về sản phẩm nào đó không?',
+        'additional_kwargs': {},
+        'type': 'ai',
+        'example': False}}
+    '''
+
+    session = models.ForeignKey(ChatSession,related_name='chat_sessions', on_delete=models.CASCADE)
     def __str__(self):
         return f"Message from {self.sender} to {self.receiver} at {self.timestamp}"
 

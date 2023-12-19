@@ -3,17 +3,22 @@ import openai
 import requests
 import datetime
 import wikipedia
+import pinecone
 from langchain.tools import tool
 from pydantic.v1 import BaseModel, Field
 from dotenv import load_dotenv, find_dotenv
 from langchain.utilities import SQLDatabase
 from langchain.prompts import ChatPromptTemplate
 from langchain.chat_models import ChatOpenAI
+from langchain.embeddings import OpenAIEmbeddings
 from langchain.schema.output_parser import StrOutputParser
 from langchain.schema.runnable import RunnablePassthrough
+from langchain.vectorstores import Pinecone
+from .agent import CustomAsyncCallbackHandler
 
 _ = load_dotenv(find_dotenv()) # read local .env file
 openai.api_key = os.environ['OPENAI_API_KEY']
+
 
 
 class OpenMeteoInput(BaseModel):
@@ -52,6 +57,7 @@ def get_current_temperature(latitude: float, longitude: float) -> dict:
     
     return f'The current temperature is {current_temperature}°C'
 
+#----------------------------------------------------------------------------------------------------------------------------
 
 @tool
 def search_wikipedia(query:str) -> str:
@@ -71,48 +77,85 @@ def search_wikipedia(query:str) -> str:
         return "No good Wikipedia Search Result was found"
     return "\n\n".join(summaries)
 
+#----------------------------------------------------------------------------------------------------------------------------
+#Tạo trước SQL query tool
+template = """Based on the table schema below, write a SQL query that would answer the user's question:
+{schema}
+Question: {question}
+SQL Query:"""
+prompt = ChatPromptTemplate.from_template(template)
+db = SQLDatabase.from_uri("sqlite:///db.sqlite3")
+
+def get_schema(_):
+    return db.get_table_info()
+
+def run_query(query):
+    return db.run(query)
+
+model = ChatOpenAI()
+
+sql_response = (
+    RunnablePassthrough.assign(schema=get_schema)
+    | prompt
+    | model.bind(stop=["\nSQLResult:"])
+    | StrOutputParser()
+)
+
+template = """Based on the table schema below, question, sql query, and sql response, write a natural language response:
+{schema}
+
+Question: {question}
+SQL Query: {query}
+SQL Response: {response}"""
+prompt_response = ChatPromptTemplate.from_template(template)
+
+full_chain = (
+RunnablePassthrough.assign(query=sql_response)
+| RunnablePassthrough.assign(
+    schema=get_schema,
+    response=lambda x: db.run(x["query"]),
+)
+| prompt_response
+| model
+)
 
 @tool
 def sqlQuery(question:str) -> str:
-    """Use when you need answer any question about shop MDC, or product in it. It use an query agent to get the answers"""
-    template = """Based on the table schema below, write a SQL query that would answer the user's question:
-    {schema}
-
-    Question: {question}
-    SQL Query:"""
-    prompt = ChatPromptTemplate.from_template(template)
-    db = SQLDatabase.from_uri("sqlite:///../db.sqlite3")
-
-    def get_schema(_):
-        return db.get_table_info()
-
-    def run_query(query):
-        return db.run(query)
-    
-    model = ChatOpenAI()
-
-    sql_response = (
-        RunnablePassthrough.assign(schema=get_schema)
-        | prompt
-        | model.bind(stop=["\nSQLResult:"])
-        | StrOutputParser()
-    )
-    
-    template = """Based on the table schema below, question, sql query, and sql response, write a natural language response:
-    {schema}
-
-    Question: {question}
-    SQL Query: {query}
-    SQL Response: {response}"""
-    prompt_response = ChatPromptTemplate.from_template(template)
-
-    full_chain = (
-    RunnablePassthrough.assign(query=sql_response)
-    | RunnablePassthrough.assign(
-        schema=get_schema,
-        response=lambda x: db.run(x["query"]),
-    )
-    | prompt_response
-    | model
-)   
+    """Use when you need answer any question about shop MDC, or product in it. It use an query agent to get the answers"""   
     return full_chain.invoke({"question": question}).content
+
+#----------------------------------------------------------------------------------------------------------------------------
+
+# Tạo trước RetrievalTool
+
+embeddings = OpenAIEmbeddings()
+# initialize pinecone
+pinecone.init(
+    api_key=os.getenv("PINECONE_API_KEY"),  # find at app.pinecone.io
+    environment=os.getenv("PINECONE_ENV"),  # next to api key in console
+)
+
+index_name = "klook"
+
+# First, check if our index already exists. If it doesn't, we create it
+if index_name not in pinecone.list_indexes():
+    # we create a new index
+    pinecone.create_index(
+    name=index_name,
+    metric='cosine',
+    dimension=1536
+)
+index = pinecone.Index(index_name)
+docsearch = Pinecone(index, embeddings.embed_query, "text")
+retriever = docsearch.as_retriever()
+
+@tool
+def retrietool(query:str) -> str:
+    """Searches and returns documents regarding the travel information in Vietnam"""   
+    ans = [i.page_content for i in retriever.get_relevant_documents(query = query)]
+    print('aloo')
+    print(ans)
+    if ans != []:
+        return  "\n\n".join(ans)
+    else:
+        return "No good Klook Result was found"
