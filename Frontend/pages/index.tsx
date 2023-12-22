@@ -68,8 +68,9 @@ export default function Home() {
 
   return (
     <main
-      className={`flex min-h-screen flex-col items-center justify-between px-24 pt-10 bg-[#343541] relative ${inter.className}`}
+    className={`flex min-h-screen flex-col items-center justify-between px-24 pt-10 bg-[#343541] relative ${inter.className}`}
     >
+      <button><a href="http://localhost:5000/">Map</a></button>
       <div className="flex-1 mb-[96px] w-full">
         {conversations?.map((conversation, index) => (
           <ConversationItem

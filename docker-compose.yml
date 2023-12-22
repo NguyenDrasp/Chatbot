@@ -23,3 +23,14 @@ services:
     depends_on:
       - backend
     command: yarn dev
+  googlemap:
+    build:
+      context: .
+      dockerfile: ./googlemap/Dockerfile
+    ports:
+      - 5000:5000
+    # environment:
+    #   - NODE_ENV=development
+    depends_on:
+      - backend
+    command: npm start 

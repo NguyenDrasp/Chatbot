@@ -4,6 +4,7 @@ import requests
 import datetime
 import wikipedia
 import pinecone
+import tqdm 
 from langchain.tools import tool
 from pydantic.v1 import BaseModel, Field
 from dotenv import load_dotenv, find_dotenv
@@ -121,41 +122,32 @@ RunnablePassthrough.assign(query=sql_response)
 
 @tool
 def sqlQuery(question:str) -> str:
-    """Use when you need answer any question about shop MDC, or product in it. It use an query agent to get the answers"""   
+    """Useful when you need to answer any questions about the MDC software store and its apps. It use an query agent to get the answers"""   
     return full_chain.invoke({"question": question}).content
 
 #----------------------------------------------------------------------------------------------------------------------------
 
 # Tạo trước RetrievalTool
+def createRetrieval():
+    embeddings = OpenAIEmbeddings()
+    # initialize pinecone
+    pinecone.init(
+        api_key=os.getenv("PINECONE_API_KEY"),  # find at app.pinecone.io
+        environment=os.getenv("PINECONE_ENV"),  # next to api key in console
+    )
 
-embeddings = OpenAIEmbeddings()
-# initialize pinecone
-pinecone.init(
-    api_key=os.getenv("PINECONE_API_KEY"),  # find at app.pinecone.io
-    environment=os.getenv("PINECONE_ENV"),  # next to api key in console
-)
+    index_name = "klook"
 
-index_name = "klook"
+    # First, check if our index already exists. If it doesn't, we create it
+    if index_name not in pinecone.list_indexes():
+        # we create a new index
+        pinecone.create_index(
+        name=index_name,
+        metric='cosine',
+        dimension=1536
+    )
+    index = pinecone.Index(index_name)
+    docsearch = Pinecone(index, embeddings.embed_query, "text")
+    retriever = docsearch.as_retriever()
 
-# First, check if our index already exists. If it doesn't, we create it
-if index_name not in pinecone.list_indexes():
-    # we create a new index
-    pinecone.create_index(
-    name=index_name,
-    metric='cosine',
-    dimension=1536
-)
-index = pinecone.Index(index_name)
-docsearch = Pinecone(index, embeddings.embed_query, "text")
-retriever = docsearch.as_retriever()
-
-@tool
-def retrietool(query:str) -> str:
-    """Searches and returns documents regarding the travel information in Vietnam"""   
-    ans = [i.page_content for i in retriever.get_relevant_documents(query = query)]
-    print('aloo')
-    print(ans)
-    if ans != []:
-        return  "\n\n".join(ans)
-    else:
-        return "No good Klook Result was found"
+    return retriever

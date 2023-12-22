@@ -79,9 +79,9 @@ class CustomAsyncCallbackHandler(AsyncCallbackHandler):
     #     print("================== AGent Start! ==========================")
     #     self.done.clear()
 
-    # async def on_agent_finish(self, finish: AgentFinish, **kwargs: Any) -> None:
-    #    """Run on agent end."""
-    #    self.done.set()
+    async def on_agent_finish(self, finish: AgentFinish, **kwargs: Any) -> None:
+        """Run on agent end."""
+        self.done.set()
 
     # async def on_chain_start(
     #    self, serialized: Dict[str, Any], inputs: Dict[str, Any], **kwargs: Any
@@ -89,8 +89,8 @@ class CustomAsyncCallbackHandler(AsyncCallbackHandler):
     #    self.done.clear()
 
     # async def on_chain_end(self, outputs: Dict[str, Any], **kwargs: Any) -> None:
-    #    """Run when chain ends running."""
-    #   self.done.set()
+    #     """Run when chain ends running."""
+    #     self.done.set()
 
     async def aiter(self) -> AsyncIterator[str]:
         """
@@ -127,7 +127,7 @@ class cbfs (param.Parameterized):
         retrieve_from_db = json.loads(chat_history)
         retrieved_messages = messages_from_dict(retrieve_from_db)
         self.functions = [format_tool_to_openai_function(f) for f in tools]
-        self.model = ChatOpenAI(temperature=0.2, streaming=True, callbacks=[CustomAsyncCallbackHandler()], verbose=True).bind(functions = self.functions)
+        self.model = ChatOpenAI(temperature=0.7, streaming=True, callbacks=[StreamingStdOutCallbackHandler()], verbose=True).bind(functions = self.functions)
         self.memory = ConversationBufferMemory(return_messages=True,memory_key="chat_history", chat_memory=ChatMessageHistory(messages=retrieved_messages))
         self.prompt = ChatPromptTemplate.from_messages([
     ("system", "You are helpful but sassy assistant"),

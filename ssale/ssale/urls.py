@@ -21,5 +21,8 @@ urlpatterns = [
     path('', include('shop.urls')),
     path('chat/', include('agent.urls')),
     path('admin/', admin.site.urls),
-    path('api-auth/', include('rest_framework.urls'))
+    path('api/', include('djoser.urls')),
+    path('api/', include('djoser.urls.jwt'))
+
+
 ]

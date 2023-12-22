@@ -10,17 +10,18 @@ from django.views.decorators.csrf import csrf_exempt
 from .tool import *
 from .agent import cbfs, CustomAsyncCallbackHandler
 from langchain.callbacks.streaming_aiter import AsyncIteratorCallbackHandler
+from langchain.agents.agent_toolkits import create_retriever_tool
 import time
-# from langchain.agents.agent_toolkits import create_retriever_tool
 
 
-# retriever = RetrieKlook()
+retriever = createRetrieval()
 
-# retrietool = create_retriever_tool(
-#     retriever,
-#     "retriver_klook",
-#     "Searches and returns documents regarding the travel information in Vietnam by Klook",
-# )
+retrietool = create_retriever_tool(
+    retriever,
+    "retriver_klook",
+    "This tool retrieves travel-related documents based on queries.",
+)
+tools = [get_current_temperature, search_wikipedia, sqlQuery, retrietool]
 
 def getHistory(session_id):
     session = ChatSession.objects.get(id=session_id)
@@ -37,7 +38,6 @@ def event_stream():
         yield f"data: The server time is {time.ctime()}\n\n"
         time.sleep(2)  # Pause for a second
 
-tools = [get_current_temperature, search_wikipedia, sqlQuery, retrietool]
 
 @csrf_exempt
 def stream_chat(request):
@@ -69,12 +69,12 @@ def stream_chat(request):
     '''
     data = json.loads(request.body)
 
+    agentchain = cbfs(tools=tools, chat_history='[]')
     message = data['query']
     #history = data['history']
     
     history = '[]'
     if message:
-        agentchain = cbfs(tools=tools, chat_history=history)
         print(message)
         stream_it = CustomAsyncCallbackHandler()
         response_stream = agentchain.send_message(message, stream_it)
