@@ -1,13 +1,13 @@
 import { cn } from "@/lib/utils"
 import React from "react"
 
-type Props = { isQuestion?: boolean; content?: string }
+type Props = { isQuestion?: boolean; content?: string, modalName?: string }
 
-const ConversationItem = ({ isQuestion, content }: Props) => {
-  console.log(content)
+const ConversationItem = ({ isQuestion, content, modalName }: Props) => {
   const contentWithBreaks = content.replace(/\n/g, '<br />');
+  console.log(modalName)
   if (!content) return null
-  return (
+  return (  
     <div className="flex gap-1 p-4 mx-2 flex-col md:px-4 md:last:pb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl">
       <div className="flex gap-3">
         <div
@@ -16,7 +16,7 @@ const ConversationItem = ({ isQuestion, content }: Props) => {
             "bg-green-500": !isQuestion
           })}
         ></div>
-        <div className="font-semibold ">{isQuestion ? "You" : "Chat"}</div>
+        <div className="font-semibold ">{isQuestion ? "You" : modalName}</div>
       </div>
       <div className="flex-1">
         <span dangerouslySetInnerHTML={{__html: contentWithBreaks}}/>
