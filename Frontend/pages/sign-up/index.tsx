@@ -87,12 +87,25 @@ const SignUp = (props: Props) => {
             className="h-[36px] rounded px-2 border-[#5c5d6e] bg-[#343541] w-full"
           />
         </div>
-        <button
-          className="mx-auto px-4 py-1 font-medium bg-gray-800 rounded-2xl hover:bg-gray-400"
-          onClick={handleSignUp}
-        >
-          Sign Up
-        </button>
+        <div className="flex relative">
+          <button
+            className="mx-auto px-4 py-1 font-medium bg-gray-800 rounded-2xl hover:bg-gray-400"
+            onClick={handleSignUp}
+          >
+            Sign Up
+          </button>
+          <div className="flex gap-2 items-center absolute right-0">
+            Or
+            <button
+              className="mx-auto px-4 py-1 font-medium bg-gray-800 rounded-2xl hover:bg-gray-400"
+              onClick={() => {
+                router.push("/sign-in")
+              }}
+            >
+              Sign In
+            </button>
+          </div>
+        </div>
         {err && (
           <div className="text-center text-red-400 text-sm mt-2">
             An error occurred. Please try again
