@@ -9,8 +9,8 @@ const inter = Inter({ subsets: ["latin"] })
 
 const modals = [
   { label: "Chat GPT 3.5", link: process.env.NEXT_PUBLIC_URL },
-  { label: "Liama 2", link: process.env.NEXT_PUBLIC_URL_2 },
-  { label: "PhoGPT 3", link: process.env.NEXT_PUBLIC_URL_2 }
+  { label: "Llama 2 7b(NLPHUST)", link: process.env.NEXT_PUBLIC_URL_2 },
+  { label: "PhoGPT", link: process.env.NEXT_PUBLIC_URL_2 }
 ]
 
 export default function Home() {
