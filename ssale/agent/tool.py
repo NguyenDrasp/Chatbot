@@ -147,7 +147,7 @@ def createRetrieval():
         dimension=1536
     )
     index = pinecone.Index(index_name)
-    docsearch = Pinecone(index, embeddings.embed_query, "text")
+    docsearch = Pinecone(index, embeddings, "text")
     retriever = docsearch.as_retriever()
 
     return retriever

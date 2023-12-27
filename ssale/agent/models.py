@@ -63,7 +63,7 @@ class ChatSession(models.Model):
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
     user = models.ForeignKey(User, related_name='chat_sessions', on_delete=models.CASCADE)
-    data = models.TextField(default = '')
+    data = models.TextField(default = '[]')
 
     def __str__(self):
         return f"ChatSession started at {self.start_time} by {self.user}"

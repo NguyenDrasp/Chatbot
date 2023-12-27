@@ -93,6 +93,7 @@ def stream_chat(request):
 
 # Đặt 1 bàn cho bữa ràm tối nay với 
 
+@csrf_exempt
 def new_session(request):
     '''
     input: user_id
@@ -100,14 +101,16 @@ def new_session(request):
     data = json.loads(request.body)
     user = User.objects.get(id=data['user_id'])
     new_chat = ChatSession.objects.create(user=user)
-    new_chat.save(force_insert=True)
+    new_chat.save()
     session_id = new_chat.id
     return JsonResponse({'session_id':session_id, 'history':'[]'}, status=200)
 
+@csrf_exempt
 def old_session(request):
     '''
-    input: 
-        session_id
+    {
+        'session_id': '123'
+    }    
     '''
     data = json.loads(request.body)
     session = ChatSession.objects.get(id=data['session_id'])
@@ -116,6 +119,22 @@ def old_session(request):
     history = session.data
     return JsonResponse({'data':history}, status=200)
 
+@csrf_exempt
+def list_session(request):
+    '''
+    {
+        'user_id': '123'
+    }    
+    '''
+    data = json.loads(request.body)
+    user_id = data['user_id']
+    user = User.objects.get(id = user_id)
+    sessions = ChatSession.objects.filter(user=user)
+    list_id = [i.id for i in sessions]
+
+    return JsonResponse({'session_ids':list_id}, status=200)
+
+@csrf_exempt
 def save_history(request):
     '''
     {
@@ -143,13 +162,14 @@ def save_history(request):
                     ]',
     }
     '''
+
     data = json.loads(request.body)
     session_id  = data['session_id']
     if session_id:
         session = ChatSession.objects.get(id=session_id)
         if data['history']:
             session.data = data['history']
-            session.save(force_insert=True)
+            session.save()
             return JsonResponse({'success': "Oke nhe em iu"}, status=200)
         else: 
             return JsonResponse({'error': 'No history provided'}, status=400)
