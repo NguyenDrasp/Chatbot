@@ -38,7 +38,15 @@ def event_stream():
         yield f"data: The server time is {time.ctime()}\n\n"
         time.sleep(2)  # Pause for a second
 
+agentchain = cbfs(tools=tools, chat_history='[]')
 
+
+"""
+Luồng: Khi có một yêu cầu chat, sẽ thay đổi lịch sử của agentchain, sau đó chạy và gửi lại.
+khi chọn 1 session cũ thì sẽ gửi về lịch sử của section đó
+khi chọn 1 session mới: sẽ tạo 1 session_chat mới và gửi về id của session đó.
+Sau khi hết phiên: người dùng rời page, lòa lại page, tạo 1 session mới, sẽ lưu lại history của session đó.
+"""
 @csrf_exempt
 def stream_chat(request):
     print(request)
@@ -64,16 +72,16 @@ def stream_chat(request):
                     'data': {'content': 'MDC có các sản phẩm sau đây:\n1. iMatch - Match, Chat, Date\n2. iVPN\n3. Vise - Video Search Engine\n4. Can Knockdown AR\n5. Can Knockdown AR Pro\n6. Super Bomber Online\n7. Super Tank Online\n8. Friend Locator\n\nBạn có thể tìm hiểu thêm về từng sản phẩm hoặc có câu hỏi cụ thể về sản phẩm nào đó không?',
                     'additional_kwargs': {},
                     'type': 'ai',
-                    'example': False}},
+                    'example': False}}
+                    ]',
     }
     '''
     data = json.loads(request.body)
 
-    agentchain = cbfs(tools=tools, chat_history='[]')
-    message = data['query']
-    #history = data['history']
     
-    history = '[]'
+    message = data['query']
+    chat_history = data['history']
+    agentchain.set_history(chat_history)
     if message:
         print(message)
         stream_it = CustomAsyncCallbackHandler()
@@ -94,7 +102,7 @@ def new_session(request):
     new_chat = ChatSession.objects.create(user=user)
     new_chat.save(force_insert=True)
     session_id = new_chat.id
-    return JsonResponse({'session_id':session_id}, status=200)
+    return JsonResponse({'session_id':session_id, 'history':'[]'}, status=200)
 
 def old_session(request):
     '''
@@ -103,6 +111,49 @@ def old_session(request):
     '''
     data = json.loads(request.body)
     session = ChatSession.objects.get(id=data['session_id'])
-    messages = Message.objects.filter(session=session)
-    result = [message.data for message in messages ]
-    return JsonResponse({'data':result}, status=200)
+    #messages = Message.objects.filter(session=session)
+    #result = [message.data for message in messages ]
+    history = session.data
+    return JsonResponse({'data':history}, status=200)
+
+def save_history(request):
+    '''
+    {
+        'session_id':'123',
+        'history':'[{'type': 'human',
+                    'data': {'content': 'Chào bạn, mình là Đạt',
+                    'additional_kwargs': {},
+                    'type': 'human',
+                    'example': False}},
+                    {'type': 'ai',
+                    'data': {'content': 'Chào Đạt! Tôi là trợ lý của bạn. Cần tôi giúp gì hôm nay?',
+                    'additional_kwargs': {},
+                    'type': 'ai',
+                    'example': False}},
+                    {'type': 'human',
+                    'data': {'content': 'MDC có những sản phẩm nào thế?',
+                    'additional_kwargs': {},
+                    'type': 'human',
+                    'example': False}},
+                    {'type': 'ai',
+                    'data': {'content': 'MDC có các sản phẩm sau đây:\n1. iMatch - Match, Chat, Date\n2. iVPN\n3. Vise - Video Search Engine\n4. Can Knockdown AR\n5. Can Knockdown AR Pro\n6. Super Bomber Online\n7. Super Tank Online\n8. Friend Locator\n\nBạn có thể tìm hiểu thêm về từng sản phẩm hoặc có câu hỏi cụ thể về sản phẩm nào đó không?',
+                    'additional_kwargs': {},
+                    'type': 'ai',
+                    'example': False}}
+                    ]',
+    }
+    '''
+    data = json.loads(request.body)
+    session_id  = data['session_id']
+    if session_id:
+        session = ChatSession.objects.get(id=session_id)
+        if data['history']:
+            session.data = data['history']
+            session.save(force_insert=True)
+            return JsonResponse({'success': "Oke nhe em iu"}, status=200)
+        else: 
+            return JsonResponse({'error': 'No history provided'}, status=400)
+
+    else:
+        return JsonResponse({'error': 'No session_id provided'}, status=400)
+    

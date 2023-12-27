@@ -157,10 +157,12 @@ class cbfs (param.Parameterized):
         extracted_messages = self.qa.memory.chat_memory.messages
         ingest_to_db = messages_to_dict(extracted_messages)
         return json.dumps(ingest_to_db)
-    
-    def clear_history(self,count=0):
-        self.qa.memory.chat_memory = []
-        return 
+    def set_history(self, chat_history:str):
+        retrieve_from_db = json.loads(chat_history)
+        retrieved_messages = messages_from_dict(retrieve_from_db)
+        memory = ConversationBufferMemory(return_messages=True,memory_key="chat_history", chat_memory=ChatMessageHistory(messages=retrieved_messages))
+        self.qa.memory = memory
+        return
     
     async def run_call(self, query:str, stream_it):
         response = self.qa.acall({"input": query}, callbacks=[stream_it])
