@@ -2,6 +2,8 @@ import { Inter } from "next/font/google"
 import Input from "@/components/components/Input"
 import ConversationItem from "./../components/components/ConversationItem"
 import { useState, useRef } from "react"
+import { useCheckAuth } from "@/api/checkAuth"
+import { useRouter } from "next/navigation"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -12,6 +14,8 @@ const modals = [
 ]
 
 export default function Home() {
+  const router = useRouter()
+  const { data, isLoading, status } = useCheckAuth()
   const [input, setInput] = useState("")
   const [answer, setAnswer] = useState("")
   const [conversations, setConversations] = useState<{
@@ -57,8 +61,7 @@ export default function Home() {
         ]
       }))
       setAnswer("")
-      const accessToken = 
-        localStorage.getItem("access_token")
+      const accessToken = localStorage.getItem("access_token")
       const response = await fetch(`${modals[modal].link}/stream_chat/`, {
         method: "POST",
         headers: {
@@ -90,6 +93,11 @@ export default function Home() {
     setAnswer("")
     setModal(newModal)
   }
+
+  if (!isLoading && status === 401) {
+    router.push("/sign-in")
+  }
+
   return (
     <main
       className={`flex min-h-screen flex-col items-center justify-between px-24 pt-10 bg-[#343541] relative ${inter.className}`}
