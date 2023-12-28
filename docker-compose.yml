@@ -23,6 +23,7 @@ services:
     depends_on:
       - backend
     command: yarn dev
+    
   googlemap:
     build:
       context: .
