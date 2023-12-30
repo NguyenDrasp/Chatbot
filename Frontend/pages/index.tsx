@@ -1,9 +1,13 @@
 import { Inter } from "next/font/google"
 import Input from "@/components/components/Input"
 import ConversationItem from "./../components/components/ConversationItem"
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useCheckAuth } from "@/api/checkAuth"
 import { useRouter } from "next/navigation"
+import { useGetListSession } from "@/api/getListSession"
+import { saveHistory } from "@/api/saveHistory"
+import { newSession } from "@/api/newSession"
+import { useGetOldHistory } from "@/api/getOldSessionHistory"
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -16,26 +20,68 @@ const modals = [
 export default function Home() {
   const router = useRouter()
   const { data, isLoading, status } = useCheckAuth()
+  const [sessionId, setSessionId] = useState({
+    sessionId: null,
+    isInit: true
+  })
+  const { data: listSession } = useGetListSession(
+    data?.data?.id,
+    sessionId.sessionId
+  )
   const [input, setInput] = useState("")
   const [answer, setAnswer] = useState("")
   const [conversations, setConversations] = useState<{
     0: {
-      isQuestion: boolean
-      content: string
+      type: "human" | "ai"
+      data: {
+        content: string
+
+        additional_kwargs: {}
+        type: "human" | "ai"
+        example: false
+      }
     }[]
     1: {
-      isQuestion: boolean
-      content: string
+      type: "human" | "ai"
+      data: {
+        content: string
+
+        additional_kwargs: {}
+        type: "human" | "ai"
+        example: false
+      }
     }[]
     2: {
-      isQuestion: boolean
-      content: string
+      type: "human" | "ai"
+      data: {
+        content: string
+
+        additional_kwargs: {}
+        type: "human" | "ai"
+        example: false
+      }
     }[]
   }>({ 0: [], 1: [], 2: [] })
 
   const [modal, setModal] = useState(0)
 
   const messagesEndRef = useRef(null)
+
+  const { data: sessionHistory } = useGetOldHistory(sessionId.sessionId)
+
+  useEffect(() => {
+    if (
+      sessionId.isInit &&
+      !!sessionHistory &&
+      !!sessionHistory?.data &&
+      !!sessionHistory?.data?.data
+    ) {
+      setConversations((prev) => ({
+        ...prev,
+        [modal]: JSON.parse(sessionHistory?.data?.data)
+      }))
+    }
+  }, [sessionId, sessionHistory, modal])
 
   const scrollToBottom = () => {
     if (messagesEndRef) {
@@ -53,11 +99,24 @@ export default function Home() {
         [modal]: [
           ...prev[modal],
           {
-            isQuestion: false,
-            content: answer,
+            type: "ai",
+            data: {
+              content: answer,
+              additional_kwargs: {},
+              type: "ai",
+              example: false
+            },
             modalName: modals[modal].label
           },
-          { isQuestion: true, content: payload.query }
+          {
+            type: "human",
+            data: {
+              content: payload.query,
+              additional_kwargs: {},
+              type: "human",
+              example: false
+            }
+          }
         ]
       }))
       setAnswer("")
@@ -68,7 +127,10 @@ export default function Home() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${accessToken}`
         },
-        body: JSON.stringify(payload)
+        body: JSON.stringify({
+          ...payload,
+          history: JSON.stringify(conversations?.[modal]?.slice(-5))
+        })
       })
       const reader = response?.body?.getReader()
 
@@ -94,54 +156,121 @@ export default function Home() {
     setModal(newModal)
   }
 
-  if (!isLoading && status === 401) {
+  const handleSaveHistory = () => {
+    if (!sessionId.sessionId) return
+    saveHistory({
+      session_id: sessionId.sessionId,
+      history: JSON.stringify([
+        ...conversations?.[modal]?.slice(-5),
+        !!answer && {
+          type: "ai",
+          data: {
+            content: answer,
+            additional_kwargs: {},
+            type: "ai",
+            example: false
+          },
+          modalName: modals[modal].label
+        }
+      ])
+    })
+  }
+
+  const createNewSession = (userId: string) => async () => {
+    try {
+      if (userId) {
+        const res = await newSession(userId)
+        setSessionId({ sessionId: res?.data?.session_id, isInit: true })
+      }
+    } catch (err) {
+      console.log(err)
+    }
+  }
+  if (!isLoading && !data?.data?.id) {
     router.push("/sign-in")
   }
 
   return (
-    <main
-      className={`flex min-h-screen flex-col items-center justify-between px-24 pt-10 bg-[#343541] relative ${inter.className}`}
-    >
-      <button className="fixed top-5 px-3 py-1 bg-gray-800 rounded-2xl hover:bg-gray-400">
-        <a href="http://localhost:5000/">Map</a>
-      </button>
-      <div className="flex-1 mb-[148px] w-full">
-        {conversations?.[modal]?.map((conversation, index) => (
-          <ConversationItem
+    <main className="flex bg-[#343541]">
+      <div className="h-screen no-scrollbar overflow-y-scroll pl-3 pt-10 w-[200px] flex flex-col gap-4">
+        <button
+          onClick={createNewSession(data?.data?.id)}
+          className="px-3 py-2 mb-5 bg-gray-800 rounded-2xl hover:!bg-gray-400"
+        >
+          Create new session
+        </button>
+        {listSession?.data?.session_ids?.map((session, index) => (
+          <button
             key={index}
-            content={conversation?.content}
-            isQuestion={conversation?.isQuestion}
-            modalName={modals[modal].label}
-          />
+            onClick={() => {
+              setSessionId({ sessionId: session, isInit: true })
+              setAnswer("")
+            }}
+            className={`px-3 py-1 bg-gray-800 rounded-2xl hover:!bg-gray-400 ${
+              sessionId.sessionId === session && "!bg-gray-400"
+            }`}
+          >
+            Session {session}
+          </button>
         ))}
-        {!!answer && (
-          <ConversationItem content={answer} modalName={modals[modal].label} />
+        {!!sessionId.sessionId && (
+          <button
+            onClick={handleSaveHistory}
+            className="px-3 py-2 mt-10 bg-gray-800 rounded-2xl hover:!bg-gray-400"
+          >
+            Save session history
+          </button>
         )}
-        <div ref={messagesEndRef} />
       </div>
-      <div className="fixed bottom-0 left-0 right-0 pb-10 bg-[#343541]">
-        <div className="stretch flex-row md:last:pb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl flex gap-4 mb-2 items-center border-t pt-2">
-          Select modal:
-          {modals.map((mod, index) => (
-            <button
-              key={index}
-              onClick={applyModal(index)}
-              className={`px-3 py-1 bg-gray-800 rounded-2xl ${
-                index === modal && "!bg-gray-400"
-              }`}
-            >
-              {mod.label}
-            </button>
-          ))}
+      {!!sessionId.sessionId && (
+        <div
+          className={`flex-1 no-scrollbar flex min-h-screen flex-col items-center justify-between px-24 pt-10 relative ${inter.className}`}
+        >
+          <button className="fixed top-5 px-3 py-1 bg-gray-800 rounded-2xl hover:bg-gray-400">
+            <a href="http://localhost:5000/">Map</a>
+          </button>
+          <div className="flex-1 mb-[148px] w-full">
+            {conversations?.[modal]?.map((conversation, index) => (
+              <ConversationItem
+                key={index}
+                content={conversation?.data?.content}
+                isQuestion={conversation?.type === "human"}
+                modalName={modals[modal].label}
+              />
+            ))}
+            {!!answer && (
+              <ConversationItem
+                content={answer}
+                modalName={modals[modal].label}
+              />
+            )}
+            <div ref={messagesEndRef} />
+          </div>
+          <div className="fixed bottom-0 left-[200px] right-0 pb-10 bg-[#343541]">
+            <div className="stretch flex-row md:last:pb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl flex gap-4 mb-2 items-center border-t pt-2">
+              Select modal:
+              {modals.map((mod, index) => (
+                <button
+                  key={index}
+                  onClick={applyModal(index)}
+                  className={`px-3 py-1 bg-gray-800 rounded-2xl ${
+                    index === modal && "!bg-gray-400"
+                  }`}
+                >
+                  {mod.label}
+                </button>
+              ))}
+            </div>
+            <Input
+              value={input}
+              requestToServer={requestToServer}
+              onInputChange={handleInputChange}
+              placeholder="Type your message here."
+              className="stretch mx-2 flex flex-row gap-3 md:px-4 md:last:pb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl"
+            />
+          </div>
         </div>
-        <Input
-          value={input}
-          requestToServer={requestToServer}
-          onInputChange={handleInputChange}
-          placeholder="Type your message here."
-          className="stretch mx-2 flex flex-row gap-3 md:px-4 md:last:pb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl"
-        />
-      </div>
+      )}
     </main>
   )
 }
