@@ -4,8 +4,7 @@ import React from "react"
 type Props = { isQuestion?: boolean; content?: string, modalName?: string }
 
 const ConversationItem = ({ isQuestion, content, modalName }: Props) => {
-  const contentWithBreaks = content.replace(/\n/g, '<br />');
-  console.log(modalName)
+  const contentWithBreaks = content?.replace(/\n/g, '<br />');
   if (!content) return null
   return (  
     <div className="flex gap-1 p-4 mx-2 flex-col md:px-4 md:last:pb-6 lg:mx-auto lg:max-w-2xl xl:max-w-3xl">
