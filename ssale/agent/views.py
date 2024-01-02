@@ -100,11 +100,15 @@ def new_session(request):
     input: user_id
     '''
     data = json.loads(request.body)
-    user = User.objects.get(id=data['user_id'])
-    new_chat = ChatSession.objects.create(user=user)
-    new_chat.save()
-    session_id = new_chat.id
-    return JsonResponse({'session_id':session_id, 'history':'[]'}, status=200)
+    try:
+        user_id = int(data['user_id'])
+        user = User.objects.get(id=user_id)
+        new_chat = ChatSession.objects.create(user=user)
+        new_chat.save()
+        session_id = new_chat.id
+        return JsonResponse({'session_id':session_id, 'history':'[]'}, status=200)
+    except:
+        return JsonResponse({'error': 'No or wrong userid'}, status=400)
 
 @csrf_exempt
 def old_session(request):
@@ -128,13 +132,16 @@ def list_session(request):
     }    
     '''
     data = json.loads(request.body)
-    user_id = data['user_id']
-    user = User.objects.get(id = user_id)
-    sessions = ChatSession.objects.filter(user=user)
-    list_id = [i.id for i in sessions]
+    try:
+        user_id = int(data['user_id'])
+        
+        user = User.objects.get(id = user_id)
+        sessions = ChatSession.objects.filter(user=user)
+        list_id = [i.id for i in sessions]
 
-    return JsonResponse({'session_ids':list_id}, status=200)
-
+        return JsonResponse({'session_ids':list_id}, status=200)
+    except:
+        return JsonResponse({'error': 'No or wrong userid'}, status=400)
 @csrf_exempt
 def save_history(request):
     '''
