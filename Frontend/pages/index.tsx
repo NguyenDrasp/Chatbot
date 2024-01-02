@@ -200,7 +200,7 @@ export default function Home() {
         <div></div>
         <button 
           className="px-3 py-3 mt-10 bg-gray-800 rounded-2xl hover:!bg-gray-400" 
-          onClick={async () => await keycloak.logout({ redirectUri: "http://localhost:3000" })} 
+          onClick={() => location.replace(`${process.env.NEXT_PUBLIC_KEYCLOAK}/realms/sso/protocol/openid-connect/logout?client_id=chatbot-dulich&post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A3000%2F&id_token_hint=${keycloak?.idToken}`)} 
         >
           Logout
         </button>
