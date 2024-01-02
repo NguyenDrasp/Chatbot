@@ -81,6 +81,7 @@ def stream_chat(request):
     
     message = data['query']
     chat_history = data['history']
+    print(chat_history)
     agentchain.set_history(chat_history)
     if message:
         print(message)
@@ -164,6 +165,7 @@ def save_history(request):
     '''
 
     data = json.loads(request.body)
+    print(data)
     session_id  = data['session_id']
     if session_id:
         session = ChatSession.objects.get(id=session_id)

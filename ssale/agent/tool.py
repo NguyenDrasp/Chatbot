@@ -62,7 +62,7 @@ def get_current_temperature(latitude: float, longitude: float) -> dict:
 
 @tool
 def search_wikipedia(query:str) -> str:
-    """Run Wikipedia search and get page summaries."""
+    """Run Wikipedia search and get page summaries. Then answer in Vietnamese"""
     page_titles = wikipedia.search(query)
     summaries = []
     for page_title in page_titles[: 3]:
@@ -148,6 +148,10 @@ def createRetrieval():
     )
     index = pinecone.Index(index_name)
     docsearch = Pinecone(index, embeddings, "text")
-    retriever = docsearch.as_retriever()
+    retriever = docsearch.as_retriever(
+        search_type="similarity_score_threshold",
+        search_kwargs={'score_threshold': 0.93,
+                       'k':2}
+        )
 
     return retriever
