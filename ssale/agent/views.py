@@ -101,9 +101,8 @@ def new_session(request):
     '''
     data = json.loads(request.body)
     try:
-        user_id = int(data['user_id'])
-        user = User.objects.get(id=user_id)
-        new_chat = ChatSession.objects.create(user=user)
+        user_id = data['user_id']
+        new_chat = ChatSession.objects.create(user_id=user_id)
         new_chat.save()
         session_id = new_chat.id
         return JsonResponse({'session_id':session_id, 'history':'[]'}, status=200)
@@ -133,10 +132,8 @@ def list_session(request):
     '''
     data = json.loads(request.body)
     try:
-        user_id = int(data['user_id'])
-        
-        user = User.objects.get(id = user_id)
-        sessions = ChatSession.objects.filter(user=user)
+        user_id = data['user_id']
+        sessions = ChatSession.objects.filter(user_id=user_id)
         list_id = [i.id for i in sessions]
 
         return JsonResponse({'session_ids':list_id}, status=200)
