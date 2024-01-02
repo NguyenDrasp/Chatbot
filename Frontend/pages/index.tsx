@@ -2,12 +2,12 @@ import { Inter } from "next/font/google"
 import Input from "@/components/components/Input"
 import ConversationItem from "./../components/components/ConversationItem"
 import { useState, useRef, useEffect } from "react"
-import { useCheckAuth } from "@/api/checkAuth"
 import { useRouter } from "next/navigation"
 import { useGetListSession } from "@/api/getListSession"
 import { saveHistory } from "@/api/saveHistory"
 import { newSession } from "@/api/newSession"
 import { useGetOldHistory } from "@/api/getOldSessionHistory"
+import { useKeycloak } from "@react-keycloak/ssr";
 
 const inter = Inter({ subsets: ["latin"] })
 
@@ -17,15 +17,16 @@ const modals = [
   { label: "PhoGPT", link: process.env.NEXT_PUBLIC_URL_2 }
 ]
 
+
 export default function Home() {
-  const router = useRouter()
-  const { data, isLoading, status } = useCheckAuth()
+  const { keycloak } = useKeycloak()
+  
   const [sessionId, setSessionId] = useState({
     sessionId: null,
     isInit: true
   })
   const { data: listSession } = useGetListSession(
-    data?.data?.id,
+    keycloak?.idTokenParsed?.sub,
     sessionId.sessionId
   )
   const [input, setInput] = useState("")
@@ -186,18 +187,22 @@ export default function Home() {
       console.log(err)
     }
   }
-  if (!isLoading && !data?.data?.id) {
-    router.push("/sign-in")
-  }
 
   return (
     <main className="flex bg-[#343541]">
       <div className="h-screen no-scrollbar overflow-y-scroll pl-3 pt-10 w-[200px] flex flex-col gap-4">
         <button
-          onClick={createNewSession(data?.data?.id)}
+          onClick={createNewSession(keycloak?.idTokenParsed?.sub)}
           className="px-3 py-2 mb-5 bg-gray-800 rounded-2xl hover:!bg-gray-400"
         >
           Create new session
+        </button>
+        <div></div>
+        <button 
+          className="px-3 py-3 mt-10 bg-gray-800 rounded-2xl hover:!bg-gray-400" 
+          onClick={() => location.replace(`${process.env.NEXT_PUBLIC_KEYCLOAK}/realms/sso/protocol/openid-connect/logout?client_id=chatbot-dulich&post_logout_redirect_uri=http%3A%2F%2Flocalhost%3A3000%2F&id_token_hint=${keycloak?.idToken}`)} 
+        >
+          Logout
         </button>
         {listSession?.data?.session_ids?.map((session, index) => (
           <button
@@ -230,6 +235,7 @@ export default function Home() {
             <a href="http://localhost:5000/">Map</a>
           </button>
           <div className="flex-1 mb-[148px] w-full">
+        
             {conversations?.[modal]?.map((conversation, index) => (
               <ConversationItem
                 key={index}

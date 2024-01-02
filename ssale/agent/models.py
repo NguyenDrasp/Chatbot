@@ -62,11 +62,12 @@ class User(AbstractBaseUser, PermissionsMixin):
 class ChatSession(models.Model):
     start_time = models.DateTimeField(auto_now_add=True)
     end_time = models.DateTimeField(null=True, blank=True)
-    user = models.ForeignKey(User, related_name='chat_sessions', on_delete=models.CASCADE)
+    #user = models.ForeignKey(User, related_name='chat_sessions', on_delete=models.CASCADE)
     data = models.TextField(default = '[]')
+    user_id = models.CharField(unique = True, max_length=255)
 
     def __str__(self):
-        return f"ChatSession started at {self.start_time} by {self.user}"
+        return f"ChatSession started at {self.start_time} by {self.user_id}"
     
 class Message(models.Model):
     # HUMAN = 'human'
