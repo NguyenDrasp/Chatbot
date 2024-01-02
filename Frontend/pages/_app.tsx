@@ -7,7 +7,7 @@ import type { IncomingMessage } from "http";
 const keycloakCfg = {
   url: process.env.NEXT_PUBLIC_KEYCLOAK,
   realm: "sso",
-  clientId: "ban-hang",
+  clientId: "chatbot-dulich",
 };
 
 interface InitialProps {

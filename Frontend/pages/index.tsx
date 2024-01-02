@@ -197,6 +197,13 @@ export default function Home() {
         >
           Create new session
         </button>
+        <div></div>
+        <button 
+          className="px-3 py-3 mt-10 bg-gray-800 rounded-2xl hover:!bg-gray-400" 
+          onClick={async () => await keycloak.logout({ redirectUri: "http://localhost:3000" })} 
+        >
+          Logout
+        </button>
         {listSession?.data?.session_ids?.map((session, index) => (
           <button
             key={index}
@@ -228,6 +235,7 @@ export default function Home() {
             <a href="http://localhost:5000/">Map</a>
           </button>
           <div className="flex-1 mb-[148px] w-full">
+        
             {conversations?.[modal]?.map((conversation, index) => (
               <ConversationItem
                 key={index}
